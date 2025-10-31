@@ -1,0 +1,46 @@
+{
+	"reset": "\u001b[0m",
+
+	"bold": "\u001b[1m",
+	"underline": "\u001b[4m",
+
+	"black": "\u001b[0;30m",
+	"black_bold": "\u001b[1;30m",
+	"black_underline": "\u001b[4;30m",
+	"black_background": "\u001b[40m",
+
+	"red": "\u001b[0;31m",
+	"red_bold": "\u001b[1;31m",
+	"red_underline": "\u001b[4;31m",
+	"red_background": "\u001b[41m",
+
+	"green": "\u001b[0;32m",
+	"green_bold": "\u001b[1;32m",
+	"green_underline": "\u001b[4;32m",
+	"green_background": "\u001b[42m",
+
+	"yellow": "\u001b[0;33m",
+	"yellow_bold": "\u001b[1;33m",
+	"yellow_underline": "\u001b[4;33m",
+	"yellow_background": "\u001b[43m",
+
+	"blue": "\u001b[0;34m",
+	"blue_bold": "\u001b[1;34m",
+	"blue_underline": "\u001b[4;34m",
+	"blue_background": "\u001b[44m",
+
+	"purple": "\u001b[0;35m",
+	"purple_bold": "\u001b[1;35m",
+	"purple_underline": "\u001b[4;35m",
+	"purple_background": "\u001b[45m",
+
+	"cyan": "\u001b[0;36m",
+	"cyan_bold": "\u001b[1;36m",
+	"cyan_underline": "\u001b[4;36m",
+	"cyan_background": "\u001b[46m",
+
+	"white": "\u001b[0;37m",
+	"white_bold": "\u001b[1;37m",
+	"white_underline": "\u001b[4;37m",
+	"white_background": "\u001b[47m"
+}

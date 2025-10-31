@@ -1,0 +1,11 @@
+{
+	"name": "node-simple-server",
+	"description": "Creating a simple server without overcomplication",
+	"dependencies": {
+		"ws": "8.18.3"
+	},
+	"scripts": {
+		"serve": "node example.js",
+		"mime_types-force-reload": "node ./SERVER_DATA/mime_types-reload.js"
+	}
+}

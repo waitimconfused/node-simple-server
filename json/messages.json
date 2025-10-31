@@ -1,0 +1,37 @@
+{
+	"http": {
+		"100": {
+			"client": "The initial part of the request has been received. Continue."
+		},
+
+		"101": {
+			"client": "Switching protocols as requested. Proceed using \"{{data.url}}\""
+		},
+
+		"200": {
+			"server": "{{STYLES.green}}HTTP:200 {{STYLES.underline}}{{data.url}}"
+		},
+
+		"404": {
+			"client": "The requested path \"{{data.url}}\" could not be resolved.",
+			"server": "{{STYLES.red}}HTTP:404 {{STYLES.underline}}{{data.url}}"
+		},
+
+		"500": {
+			"client": "Internal server error. Try again later.",
+			"server": "Internal server error"
+		},
+
+		"default": {
+			"client": "Uncaught error. Try again later.",
+			"server": "{{STYLES.red}}HTTP:{{data.url}} Uncaught error involving {{STYLES.underline}}{{data.url}}"
+		}
+	},
+
+	"websocket": {
+		"connection": "{{STYLES.green}}WEBSOCKET connection",
+		"error": "{{STYLES.red}}WEBSOCKET error",
+		"message": "{{STYLES.green}}WEBSOCKET message",
+		"close": "{{STYLES.green}}WEBSOCKET close"
+	}
+}
