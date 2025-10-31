@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Document</title>
+		<style>
+			.log {
+				border: 1px solid black;
+				margin-top: 16px;
+				padding: 8px;
+				font-family: monospace;
+			}
+		</style>
+	</head>
+
+	<body>
+
+		<header>
+			<h1>Websocket Example</h1>
+			<p>This example creates a websocket connection to <code>ws://localhost:8080/ws</code>, and reverses any string that is sent</p>
+		</header>
+
+		<section>
+			<form id="form">
+				<input type="text" id="message" placeholder="String" required>
+				<button type="submit">Send</button>
+			</form>
+			<div id="output"></div>
+		</section>
+
+		<script>
+			var websocket = new WebSocket("ws://localhost:8080/ws");
+
+			// Listen for connection
+			websocket.addEventListener("open", (event) => {
+				log("Event", "Connected to websocket");
+			});
+
+			// Listen for messages
+			websocket.addEventListener("message", (event) => {
+				log("Incomming Message", event.data);
+			});
+
+			// Send messages
+			const FORM = document.getElementById("form");
+			const INPUT = document.getElementById("message");
+			FORM.addEventListener("submit", (event) => {
+				event.preventDefault();
+				if (!INPUT.value) return;
+				websocket.send(INPUT.value);
+				log("Outgoing Message", INPUT.value);
+			})
+
+			// Listen for errors
+			websocket.addEventListener("error", (event) => {
+				log("Event", "Websocket error. See console for details.");
+			});
+
+			// Listen for closing
+			websocket.addEventListener("close", () => {
+				log("Event", "Websocket has been closed.")
+			});
+		</script>
+		<script>
+			const DIV = document.getElementById("output");
+			function log(header, data) {
+
+				let message = document.createElement("div");
+				message.classList.add("log")
+
+				let date = new Date();
+
+				let span = document.createElement("span");
+				span.innerText = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()} @${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`;
+				message.appendChild(span);
+
+				let h2 = document.createElement("h2");
+				h2.innerText = header;
+				message.appendChild(h2);
+
+				let p = document.createElement("p");
+				p.innerText = data;
+				message.appendChild(p);
+
+				DIV.appendChild(message);
+			}
+		</script>
+	</body>
+
+</html>

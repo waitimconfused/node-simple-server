@@ -6,6 +6,6 @@
 	},
 	"scripts": {
 		"serve": "node example.js",
-		"mime_types-force-reload": "node ./SERVER_DATA/mime_types-reload.js"
+		"mime_types-force-reload": "node reload-mime_types_json.js"
 	}
 }
