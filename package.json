@@ -1,5 +1,5 @@
 {
-	"name": "node-simple-server",
+	"name": "http-simple-server",
 	"description": "Creating a simple server without overcomplication",
 	"dependencies": {
 		"ws": "8.18.3"

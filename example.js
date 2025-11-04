@@ -9,17 +9,12 @@ const localhost = new Server({
 });
 
 localhost.open();
-
 localhost.info.disableAll();
 
-localhost.endpoint("/", (request, result) => {
-	result.writeHead("Content-Type", Server.mimeTypes.txt);
-	result.write("Hello, World!");
-	result.end();
-});
+const websocketDomain = localhost.subdomain("ws");
 
-const websocket = localhost.websocket("/ws");
+const websocket1 = websocketDomain.websocket("/example");
 
-websocket.listen("message", (socket, request, data) => {
+websocket1.listen.message((socket, data) => {
 	socket.send("Reversed string:\n"+data.reverse());
 });
