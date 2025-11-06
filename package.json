@@ -1,5 +1,6 @@
 {
 	"name": "http-simple-server",
+	"version": "1.0.0",
 	"description": "Creating a simple server without overcomplication",
 	"dependencies": {
 		"ws": "8.18.3"
