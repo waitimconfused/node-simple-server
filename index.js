@@ -24,7 +24,7 @@ const WS_INSTALLED = checkRequire("ws");
  */
 
 /**
- * @typedef {(request?:http.IncomingMessage,result?:http.ServerResponse<http.IncomingMessage>&{req:http.IncomingMessage})=>void} ServerCallbackFunction
+ * @typedef {(request?:http.IncomingMessage,result?:http.ServerResponse<http.IncomingMessage>&{req:http.IncomingMessage})=>void|Promise<void>} ServerCallbackFunction
  */
 
 /**
@@ -287,11 +287,17 @@ class Server {
 	 * @param {http.IncomingMessage} request 
 	 * @param {http.ServerResponse<http.IncomingMessage> & { req: http.IncomingMessage; }} result 
 	 */
-	#throwHttpError(statusCode, request, result) {
+	async #throwHttpError(statusCode, request, result) {
 
 		if (statusCode in this.#statusHandelers) {
 			let callback = this.#statusHandelers[statusCode];
-			callback(request, result);
+			
+			if (callback.constructor.name == "AsyncFunction") {
+				await callback(request, result);
+			} else {
+				callback(request, result);
+			}
+
 			if (result.writableEnded) return;
 		}
 
@@ -465,8 +471,13 @@ class Server {
 	 */
 	static sendFile(path, result) {
 
+		return new Promise((resolve, reject) => {
 
-		return new Promise((resolve) => {
+			if (result.writableEnded) {
+				reject(406); // Not Acceptable
+				return;
+			}
+
 			if (path.startsWith("/")) path = path.replace("/", "");
 
 			let url = new URL("http://example.com/"+path);
@@ -501,13 +512,13 @@ class Server {
 			}
 
 			if ( fs.existsSync("."+pathname) == false ) {
-				resolve(404);
+				resolve(404); // Not Found
 				return;
 			}
 
 			fs.readFile("."+pathname, (err, data) => {
 				if (err) {
-					resolve(500);
+					resolve(500); // Internal Server Error
 					return;
 				}
 
@@ -521,7 +532,7 @@ class Server {
 				result.writeHead(200, { "Content-Type": mimeType });
 				result.write(data);
 				result.end();
-				resolve(200);
+				resolve(200); // OK
 				return;
 			});
 		})
