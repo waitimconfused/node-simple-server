@@ -16,11 +16,9 @@ const WS_INSTALLED = checkRequire("ws");
  */
 
 /**
- * @typedef {object} ServerCustomData
- * @prop {false|boolean} Send-Raw-Files
- * @prop {true|boolean} Default-File-Indexing
+ * @typedef {object} CustomData
  * @prop {"/"|string} rootDirectory See `Server.flags.FILESYSTEM`
- * @prop {http.Server} Server-Reference
+ * @prop {http.Server} subdomainServerReference **⚠️ Internal use only ⚠️**
  */
 
 /**
@@ -60,11 +58,11 @@ class Server {
 	/** @type {?http.Server} */
 	_httpServer;
 
-	/** @type {?Server} Filled in if server is a subdomain `Server.flags.SUBDOMAIN` */
+	/** @type {?Server} Filled in if server is a subdomain (See `Server.flags._SUBDOMAIN`) */
 	parentServer;
 
 	get fullDomain() {
-		if (this.flags[Server.flags.SUBDOMAIN]) {
+		if (this.flags[Server.flags._SUBDOMAIN]) {
 			return this.domain+"."+this.parentServer.fullDomain;
 		}
 		return this.domain + ":" + this.port;
@@ -90,14 +88,14 @@ class Server {
 		}
 		this.flags = Object.freeze(this.flags);
 
-		if (!this.flags[Server.flags._SUBSERVER]) { // Is a default server
+		if (!this.flags[Server.flags._SUBDOMAIN]) { // Is a default server
 
 			this._httpServer = http.createServer((request, result) => {
 				this.#processRequest(request, result);
 			});
 
 		} else { // Is a custom server (subdomain or fileserver)
-			this.parentServer = options.customData["Server-Reference"];
+			this.parentServer = options.customData["subdomainServerReference"];
 			this._httpServer = this.parentServer._httpServer;
 			delete this.open;
 			delete this.close;
@@ -190,10 +188,10 @@ class Server {
 
 		options.customData = options?.customData ?? {};
 
-		options.customData["Server-Reference"] = this;
+		options.customData["subdomainServerReference"] = this;
 
 		options.flags = options?.flags ?? [];
-		options.flags.push(Server.flags.SUBDOMAIN, Server.flags._SUBSERVER);
+		options.flags.push(Server.flags._SUBDOMAIN);
 		
 		let subdomain = new Server(options);
 		
@@ -575,16 +573,12 @@ class Server {
 	}
 
 	static flags = {
-		/** Use if the server you are creating will be treated as a subdomain */
-		SUBDOMAIN: Symbol("flags:SUBDOMAIN"),
-		/** Used for `Plugin`, the plugin being created will be treated as an endpoint, using `Plugin.filterEndpoints(endpoint:string)` */
-		ENDPOINT: Symbol("flags:ENDPOINT"),
 		/** Use if the server you are creating is a fileserver (no endpoints can be made) */
 		FILESYSTEM: Symbol("flags:FILESYSTEM"),
 		/** Hide all HTTP status logs from the console/terminal */
 		HIDESTATUSLOGS: Symbol("flags:HIDESTATUSLOGS"),
 		/** **⚠️ Internal use only ⚠️** */
-		_SUBSERVER: Symbol("flags:_SUBSERVER")
+		_SUBDOMAIN: Symbol("flags:_SUBDOMAIN")
 	};
 
 	static mimeTypes = require("./json/mime_types.json");
