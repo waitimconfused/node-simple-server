@@ -469,52 +469,50 @@ class Server {
 	 */
 	static sendFile(path, result) {
 
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 
 			if (result.writableEnded) {
-				reject(406); // Not Acceptable
+				resolve(406); // Not Acceptable
 				return;
 			}
 
 			if (path.startsWith("/")) path = path.replace("/", "");
 
-			let url = new URL("http://example.com/"+path);
-
-			let pathname = decodeURI(url.pathname);
+			let pathname = "."+decodeURI( new URL("http://example.com/"+path).pathname );
 
 			if ( (/\.([^/.]+)$/).test(pathname) == false ) { // Path has no file extension
 
 				for (let indexFile of Server.defaultIndexes) {
 					let extension = indexFile.match(/\.([^/.]+)$/)[0]; // EG: ".html", ".htm"
 
-					if (fs.existsSync("."+pathname+extension) == false) continue;
+					if (fs.existsSync(pathname+extension) == false) continue;
 					pathname += extension;
 
 				}
 
 			}
 
-			let stats = fs.lstatSync("."+pathname, {throwIfNoEntry: false});
+			let stats = fs.lstatSync(pathname, {throwIfNoEntry: false});
 
 			if (stats?.isDirectory()) {
 
 				for (let indexFile of Server.defaultIndexes) {
-					let indexPath = new URL(indexFile, url);
 
-					if (fs.existsSync("."+indexPath.pathname) == false) continue;
-					pathname = indexPath.pathname;
+					if (fs.existsSync(pathname+"/"+indexFile) == false) continue;
+					
+					pathname += "/"+indexFile;
 					break;
 
 				}
 
 			}
 
-			if ( fs.existsSync("."+pathname) == false ) {
+			if ( fs.existsSync(pathname) == false ) {
 				resolve(404); // Not Found
 				return;
 			}
 
-			fs.readFile("."+pathname, (err, data) => {
+			fs.readFile(pathname, (err, data) => {
 				if (err) {
 					resolve(500); // Internal Server Error
 					return;
@@ -585,7 +583,7 @@ class Server {
 
 	static fixedIpAddress = ("Wi-Fi" in os.networkInterfaces()) ? os.networkInterfaces()["Wi-Fi"][0].address : "localhost";
 
-	static defaultIndexes = ["index.html", "index.htm", "index.php", "index.json"];
+	static defaultIndexes = ["index.html", "index.htm", "index.js", "index.json", "index.php"];
 }
 
 module.exports = Server;
