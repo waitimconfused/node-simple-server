@@ -215,7 +215,7 @@ class Server {
 	 */
 	status(statusCode, callback) {
 		if (typeof statusCode != "number") {
-			console.error("\nInvalid status code.");
+			console.error("\nInvalid status code. The status code must be a number");
 			return;
 		}
 		if (path in this.#statusHandelers) {
@@ -228,10 +228,10 @@ class Server {
 	/**
 	 * Create a websocket endpoint on a given path.
 	 * @param {string} path Endpoint path
-	 * @returns {Websocket|undefined} Returns a Websocket endpoint (only if NPM "ws" package is installed)
+	 * @returns Returns a Websocket endpoint (only if NPM "ws" package is installed)
 	 */
 	websocket(path) {
-		return new Server.WebsocketConstructor(this, path);
+		return new (require("./lib/websocket.js"))(this, path);
 	}
 
 	/**
@@ -553,18 +553,9 @@ class Server {
 	static fixedIpAddress = ("Wi-Fi" in os.networkInterfaces()) ? os.networkInterfaces()["Wi-Fi"][0].address : "localhost";
 
 	static defaultIndexes = ["index.html", "index.htm", "index.js", "index.json", "index.php"];
-
-	/**
-	 * @type {(server:Server, path:string) => Websocket}
-	 * 
-	 * **Note**: This is an imported property that will be filled in by "./lib/websocket.js"
-	 */
-	static WebsocketConstructor(server, path) { throw new Error(`Failure to include "node-simple-server/lib/webocket.js"`) };
 }
 
 module.exports = Server;
-
-Server.WebsocketConstructor = require("./lib/websocket.js");
 
 /**
  * Formats the current time to be printed to the console/terminal
