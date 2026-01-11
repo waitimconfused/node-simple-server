@@ -377,42 +377,32 @@ class Server {
 		 * Enables output logs for only the given `ipAdresses`
 		 * 
 		 * Disables all blacklisting
-		 * @param {string|string[]} ipAddresses
+		 * @param {...string[]} ipAddresses
 		 * ***Tip:*** If you want to whitelist this machine, you can use: It's IP address; `"127.0.0.1"`; Or `"local"`
 		 */
-		whitelist: (ipAddresses) => {
+		whitelist: (...ipAddresses) => {
 			this.info.whitelistEnabled = true;
 			this.info.blacklistEnabled = false;
 
-			if (Array.isArray(ipAddresses)) {
-				for (let i = 0; i < ipAddresses.length; i ++) {
+			for (let i = 0; i < ipAddresses.length; i ++) {
 				if (ipAddresses[i] == Server.fixedIpAddress || ipAddresses[i] == "local") ipAddresses[i] = "127.0.0.1";
-					this.info.whitelistedIps.push( ipAddresses[i] );
-				}
-			} else if (typeof ipAddresses == "string") {
-				if (ipAddresses == Server.fixedIpAddress || ipAddresses == "local") ipAddresses = "127.0.0.1";
-				this.info.whitelistedIps.push(ipAddresses);
+				this.info.whitelistedIps.push( ipAddresses[i] );
 			}
 		},
 		/**
 		 * Disables output logs for only the given `ipAdresses`
 		 * 
 		 * Disables all whitelisting
-		 * @param {string|string[]} ipAddresses
+		 * @param {...string[]} ipAddresses
 		 * ***Tip:*** If you want to whitelist this machine, you can use: It's IP address; `"127.0.0.1"`; Or `"local"`
 		 */
-		blacklist: (ipAddresses) => {
+		blacklist: (...ipAddresses) => {
 			this.info.blacklistEnabled = true;
 			this.info.whitelistEnabled = false;
 
-			if (Array.isArray(ipAddresses)) {
-				for (let i = 0; i < ipAddresses.length; i ++) {
+			for (let i = 0; i < ipAddresses.length; i ++) {
 				if (ipAddresses[i] == Server.fixedIpAddress || ipAddresses[i] == "local") ipAddresses[i] = "127.0.0.1";
-					this.info.blacklistedIps.push( ipAddresses[i] );
-				}
-			} else if (typeof ipAddresses == "string") {
-				if (ipAddresses == Server.fixedIpAddress || ipAddresses == "local") ipAddresses = "127.0.0.1";
-				this.info.blacklistedIps.push(ipAddresses);
+				this.info.blacklistedIps.push( ipAddresses[i] );
 			}
 		}
 
@@ -584,7 +574,7 @@ class Server {
 	static defaultIndexes = ["index.html", "index.htm", "index.js", "index.json", "index.php"];
 
 	/** @type {(server:Server, path:string) => Websocket} */
-	static WebsocketConstructor() {};
+	static WebsocketConstructor(server, path) { throw new Error(`Failure to include "node-simple-server/lib/webocket.js"`) };
 }
 
 module.exports = Server;
