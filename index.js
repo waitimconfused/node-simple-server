@@ -3,11 +3,6 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
-const MESSAGES = require("./json/messages.json");
-const STYLES = require("./json/styles.json");
-
-const WS_INSTALLED = checkRequire("ws");
-
 /**
  * @typedef {object} ServerInitOptions
  * @prop {number} port Port number
@@ -114,7 +109,7 @@ class Server {
 				return;
 			}
 			this._httpServer.listen(this.port, "0.0.0.0", () => {
-				console.log(`🌐 Opened server at: ${STYLES.underline}http://${Server.fixedIpAddress}:${this.port}${STYLES.reset}`);
+				console.log(`🌐 Opened server at: ${Server.logStyles.underline}http://${Server.fixedIpAddress}:${this.port}${Server.logStyles.reset}`);
 				resolve(null);
 			});
 			resolve(null);
@@ -132,7 +127,7 @@ class Server {
 				return;
 			}
 			this._httpServer.close(() => {
-				console.log(`🌐 Closed server at: ${STYLES.underline}http://${Server.fixedIpAddress}:${this.port}${STYLES.reset}`);
+				console.log(`🌐 Closed server at: ${Server.logStyles.underline}http://${Server.fixedIpAddress}:${this.port}${Server.logStyles.reset}`);
 			});
 			resolve(null);
 		});
@@ -228,7 +223,7 @@ class Server {
 	 * @returns {Websocket|undefined} Returns a Websocket endpoint (only if NPM "ws" package is installed)
 	 */
 	websocket(path) {
-		return new Websocket(this, path);
+		return new Server.WebsocketConstructor(this, path);
 	}
 
 	/**
@@ -299,12 +294,12 @@ class Server {
 			if (result.writableEnded) return;
 		}
 
-		let message = MESSAGES.http.default;
+		let message = Server.logMessageTemplates.http.default;
 
 		let status = statusCode.toString();
 
-		if (status in MESSAGES.http) {
-			message = MESSAGES.http[status];
+		if (status in Server.logMessageTemplates.http) {
+			message = Server.logMessageTemplates.http[status];
 		}
 
 		let formattedMessage = this.info.logMessage(message, { ip: Server.getIP(request), url: decodeURI(request.url), isError:true });
@@ -362,9 +357,9 @@ class Server {
 					server: reference?.server ? (
 						(data?.isError ? "🔸 " : "🔹 ")+
 						getTime()+
-						" ["+STYLES.blue + data.ip + STYLES.reset+"] "+
+						" ["+Server.logStyles.blue + data.ip + Server.logStyles.reset+"] "+
 						reference.server.replace(/\{\{(.*?)\}\}/g, (match, index) => eval(index) )+
-						STYLES.reset
+						Server.logStyles.reset
 					) : ""
 				};
 			}
@@ -372,9 +367,9 @@ class Server {
 			return (
 				(data?.isError ? "🔸 " : "🔹 ")+
 				getTime()+
-				" ["+STYLES.blue + data.ip + STYLES.reset+"] "+
+				" ["+Server.logStyles.blue + data.ip + Server.logStyles.reset+"] "+
 				reference.replace(/\{\{(.*?)\}\}/g, (match, index) => eval(index) )+
-				STYLES.reset
+				Server.logStyles.reset
 			);
 		},
 
@@ -541,7 +536,6 @@ class Server {
 	 */
 	static getCookies(request) {
 		let list = {};
-		let cookieHeader = request.headers?.cookie;
 		if (!request.headers?.cookie) return list;
 
 		let cookieParts = request.headers.cookie.split(";");
@@ -579,180 +573,23 @@ class Server {
 		_SUBDOMAIN: Symbol("flags:_SUBDOMAIN")
 	};
 
+	static logMessageTemplates = require("./json/messages.json");
+
+	static logStyles = require("./json/styles.json");
+
 	static mimeTypes = require("./json/mime_types.json");
 
 	static fixedIpAddress = ("Wi-Fi" in os.networkInterfaces()) ? os.networkInterfaces()["Wi-Fi"][0].address : "localhost";
 
 	static defaultIndexes = ["index.html", "index.htm", "index.js", "index.json", "index.php"];
+
+	/** @type {(server:Server, path:string) => Websocket} */
+	static WebsocketConstructor() {};
 }
 
 module.exports = Server;
 
-const ws = WS_INSTALLED ? require("ws") : null;
-const WebSocketServer = ws?.Server ?? class {};
-
-/**
- * @typedef {object} WebsocketEventListener
- * @prop {"connection"|"error"|"message"|"close"} eventName
- * @prop {(socket, request)=>void} callback
- */
-
-/** @type {Object<string, Websocket>} */
-const WEBSOCKETS = {};
-
-class Websocket {
-	/** @type {symbol[]} See `Server.flags` */
-	flags = [ Server.flags.ENDPOINT ];
-
-	/** @type {Server} */
-	#parentServer;
-	endpoint = "/websocket";
-
-	_websocketServer = new WebSocketServer({noServer: true});
-
-	/** @type {WebsocketEventListener[]} */
-	#eventListers = [];
-
-	/** @param {Server} server */
-	constructor(server, path) {
-		this.endpoint = path;
-		this.#parentServer = server;
-		
-		if (path in WEBSOCKETS) return;
-
-		WEBSOCKETS[path] = this;
-
-		if (!WS_INSTALLED) {
-			console.error(`🔌 You must install the "${STYLES.underline}ws${STYLES.reset}" package before using Websockets.\n\tPlease run ${STYLES.yellow}npm install${STYLES.reset} or ${STYLES.yellow}npm install ws${STYLES.reset}\n`);
-			return;
-		}
-
-		console.log(`🔌 Websocket opened at ${STYLES.underline}ws://${server.fullDomain}/${path}${STYLES.reset}`);
-
-		if (server._httpServer.listeners("upgrade").length == 0) { // If there is no "upgrade" listener to the server, add one
-			server._httpServer.on("upgrade", (request, socket, head) => {
-				
-				let requestUrl = new URL(request.headers.origin+request.url);
-				let requestedPath = requestUrl.pathname ?? "/";
-				
-				if (requestedPath in WEBSOCKETS == false) return;
-
-				let websocket = WEBSOCKETS[requestedPath];
-				
-				websocket._websocketServer.handleUpgrade(request, socket, head, (ws) => {
-					websocket._websocketServer.emit("connection", ws, request);
-				});
-				
-			});
-		}
-
-		this._websocketServer.on("connection", (socket, request) => {
-			
-			this.#triggerEventListener("connection", request, socket, request);
-
-			socket.on("error", (error) => {
-				this.#triggerEventListener("error", request, socket, error);
-			});
-
-			socket.on("close", (code, reason) => {
-				this.#triggerEventListener("close", request, socket, code, reason);
-				socket.removeAllListeners();
-
-				if (!socket.CLOSED) {
-					socket.terminate();
-					socket.close();
-				}
-			});
-
-
-			socket.on("message", (data) => {
-				this.#triggerEventListener("message", request, socket, data);
-			});
-		});
-
-		this._websocketServer.on("error", (error) => {
-			this.#triggerEventListener("close", null, null, error);
-		});
-
-	}
-
-	static #callbackSymbol = Symbol("WEBSOCKET_LISTENER_CALLBACK")
-	listen = {
-		/**
-		 * @param {(socket:ws, request:http.IncomingMessage, data)=>void} callback
-		 */
-		connection: (callback) => {
-			callback[Websocket.#callbackSymbol] = { id: this.#eventListers.length };
-			this.#eventListers.push({ eventName: "connection", callback });
-		},
-
-		/**
-		 * @param {(socket:ws, error:Error)=>void} callback
-		 */
-		error: (callback) => {
-			callback[Websocket.#callbackSymbol] = { id: this.#eventListers.length };
-			this.#eventListers.push({ eventName: "error", callback });
-		},
-
-		/**
-		 * @param {(socket:ws, data:ws.RawData)=>void} callback
-		 */
-		message: (callback) => {
-			callback[Websocket.#callbackSymbol] = { id: this.#eventListers.length };
-			this.#eventListers.push({ eventName: "message", callback });
-		},
-
-		/**
-		 * @param {(socket:ws, code:number, reason:Buffer<ArrayBufferLike>)=>void} callback
-		 */
-		close: (callback) => {
-			callback[Websocket.#callbackSymbol] = { id: this.#eventListers.length };
-			this.#eventListers.push({ eventName: "close", callback });
-		},
-
-		/**
-		 * @param {"connection"|"message"|"error"|"close"} eventType
-		 * @param {(...data)=>void} callback
-		 */
-		removeListener:(eventType, callback) => {
-			let targetId = callback[Websocket.#callbackSymbol].id;
-			
-			for (let i = 0; i < this.#eventListers.length; i ++) {
-				if (this.#eventListers[i].eventName != eventType) continue;
-
-				let eventId = this.#eventListers[i].callback[Websocket.#callbackSymbol].id;
-				if (eventId != targetId) continue;
-
-				this.#eventListers.splice(i, 1);
-				break;
-			}
-		}
-	}
-
-	/**
-	 * @param {"connection"|"error"|"message"|"close"} eventName 
-	 * @param {http.IncomingMessage} request
-	 * @param {...any} data 
-	 */
-	#triggerEventListener(eventName, request, ...data) {
-
-		if (this.#parentServer.info.shouldLogFromRequest(request)){
-			let message = this.#parentServer.info.logMessage(
-				MESSAGES.websocket[eventName],
-				{
-					ip: Server.getIP(request),
-					isError: false
-				});
-			console.log(message);
-		}
-
-		for (let i = 0; i < this.#eventListers.length; i ++) {
-			if (this.#eventListers[i].eventName != eventName) continue;
-			this.#eventListers[i].callback(...data);
-		}
-	}
-
-}
+Server.WebsocketConstructor = require("./lib/websocket.js");
 
 /**
  * Formats the current time to be printed to the console/terminal
@@ -767,18 +604,4 @@ function getTime() {
 	let milliseconds = date.getMilliseconds().toString().padStart(3, "0");
 
 	return `${hours}:${minutes}:${seconds}.${milliseconds}`;
-}
-
-/**
- * Check if an NPM module is installed
- * @param {string} id
- * @returns {boolean}
- */
-function checkRequire(id) {
-	try {
-		require(id);
-	} catch(e) {
-		return false;
-	}
-	return true;
 }
