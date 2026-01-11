@@ -17,11 +17,19 @@ const os = require("os");
  */
 
 /**
- * @typedef {(request?:http.IncomingMessage,result?:http.ServerResponse<http.IncomingMessage>&{req:http.IncomingMessage})=>void|Promise<void>} ServerCallbackFunction
+ * @typedef {(request?:ServerRequest,result?:ServerResult)=>void|Promise<void>} ServerCallbackFunction
  */
 
 /**
  * @typedef {"GET"|"HEAD"|"OPTIONS"|"TRACE"|"PUT"|"DELETE"|"POST"|"PATCH"|"CONNECT"} HTTPMethod
+ */
+
+/**
+ * @typedef {http.IncomingMessage} ServerRequest
+ */
+
+/**
+ * @typedef {http.ServerResponse<http.IncomingMessage> & { req: http.IncomingMessage; }} ServerResult
  */
 
 class Server {
@@ -227,8 +235,8 @@ class Server {
 	}
 
 	/**
-	 * @param {http.IncomingMessage} request 
-	 * @param {http.ServerResponse<http.IncomingMessage> & { req: http.IncomingMessage; }} result
+	 * @param {ServerRequest} request 
+	 * @param {ServerResult} result
 	 * @param {?string} domain
 	 */
 	#processRequest(request, result, domain) {
@@ -277,8 +285,8 @@ class Server {
 
 	/**
 	 * @param {number} statusCode
-	 * @param {http.IncomingMessage} request 
-	 * @param {http.ServerResponse<http.IncomingMessage> & { req: http.IncomingMessage; }} result 
+	 * @param {ServerRequest} request 
+	 * @param {ServerResult} result 
 	 */
 	async #throwHttpError(statusCode, request, result) {
 
@@ -332,7 +340,7 @@ class Server {
 
 		/**
 		 * Returns a `boolean` for if a message should be logged baised on the request's IP address
-		 * @param {http.IncomingMessage} request
+		 * @param {ServerRequest} request
 		 * @returns {boolean}
 		 */
 		shouldLogFromRequest(request) {
@@ -410,7 +418,7 @@ class Server {
 
 	/**
 	 * Get a client's IP address from a request
-	 * @param {http.IncomingMessage} request
+	 * @param {ServerRequest} request
 	 * @returns {?string}
 	 */
 	static getIP(request) {
@@ -425,7 +433,7 @@ class Server {
 
 	/**
 	 * Extract cookies from a client request
-	 * @param {http.IncomingMessage} request 
+	 * @param {ServerRequest} request 
 	 * @returns {Promise<string|object>}
 	 */
 	static getBody(request) {
@@ -449,7 +457,7 @@ class Server {
 
 	/**
 	 * @param {string} path
-	 * @param {http.ServerResponse<http.IncomingMessage> & { req: http.IncomingMessage; }} result
+	 * @param {ServerResult} result
 	 * @returns {Promise<number>} Promise returning HTTP status code
 	 */
 	static sendFile(path, result) {
@@ -520,39 +528,12 @@ class Server {
 	}
 
 	/**
-	 * Extract cookies from a client request
-	 * @param {http.IncomingMessage} request 
-	 * @returns {Object<string, string>}
+	 * @type {{
+	 * 	get:(request:ServerRequest)=>Object<string, string>,
+	 * 	set:(key:string, value:string, result:ServerResult)=>Object<string, string>
+	 * }}
 	 */
-	static getCookies(request) {
-		let list = {};
-		if (!request.headers?.cookie) return list;
-
-		let cookieParts = request.headers.cookie.split(";");
-
-		for (let cookie of cookieParts) {
-			let parts = cookie.split(/\s*?(\S+?)\s*=\s*(.*?)\s*$/);
-			let name = parts[1];
-			let value = parts[2];
-			if (!value) continue;
-			list[name] = decodeURIComponent(value);
-		}
-
-		return list;
-	}
-
-	/**
-	 * Set a cookie on a client result
-	 * @param {string} key
-	 * @param {string} value
-	 * @param {http.ServerResponse<http.IncomingMessage> & { req: http.IncomingMessage; }} result
-	 */
-	static setCookie(key, value, result) {
-		let existingCookies = result.getHeader("Set-Cookie") ?? [];
-
-		existingCookies.push(key+"="+value);
-		result.setHeader("Set-Cookie", existingCookies); 	
-	}
+	static cookie = require("./lib/cookies.js")
 
 	static flags = {
 		/** Use if the server you are creating is a fileserver (no endpoints can be made) */
@@ -573,7 +554,11 @@ class Server {
 
 	static defaultIndexes = ["index.html", "index.htm", "index.js", "index.json", "index.php"];
 
-	/** @type {(server:Server, path:string) => Websocket} */
+	/**
+	 * @type {(server:Server, path:string) => Websocket}
+	 * 
+	 * **Note**: This is an imported property that will be filled in by "./lib/websocket.js"
+	 */
 	static WebsocketConstructor(server, path) { throw new Error(`Failure to include "node-simple-server/lib/webocket.js"`) };
 }
 
